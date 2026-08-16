@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Minimal Serif Clock</string>
+    <string name="widget_name">Minimal Serif Clock</string>
+    <string name="widget_description">Transparent 12-hour serif clock with weekday and red divider.</string>
+</resources>
