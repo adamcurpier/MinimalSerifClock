@@ -10,7 +10,6 @@ permissions:
 
 jobs:
   build:
-    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - name: Check out source
@@ -44,22 +43,3 @@ jobs:
           else
             gh release create "$TAG" "$ASSET" --title "Minimal Serif Clock ${TAG}" --notes "Installable APK for Minimal Serif Clock ${TAG}."
           fi
-      - name: Store temporary text chunks for ChatGPT handoff
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          VERSION=$(sed -n "s/.*versionName '\([^']*\)'.*/\1/p" app/build.gradle | head -n 1)
-          TAG="v${VERSION}"
-          mkdir -p /tmp/apk-handoff
-          base64 -w 0 app/build/outputs/apk/debug/app-debug.apk | fold -w 1800 | split -d -a 3 - /tmp/apk-handoff/chunk-
-          for FILE in /tmp/apk-handoff/chunk-*; do
-            NAME=$(basename "$FILE").txt
-            API_PATH="handoff/${TAG}/${NAME}"
-            CONTENT=$(base64 -w 0 "$FILE")
-            EXISTING_SHA=$(gh api "repos/${GITHUB_REPOSITORY}/contents/${API_PATH}" --jq .sha 2>/dev/null || true)
-            if [ -n "$EXISTING_SHA" ]; then
-              gh api --method PUT "repos/${GITHUB_REPOSITORY}/contents/${API_PATH}" -f message="Store ${TAG} handoff chunk [skip ci]" -f content="$CONTENT" -f sha="$EXISTING_SHA" >/dev/null
-            else
-              gh api --method PUT "repos/${GITHUB_REPOSITORY}/contents/${API_PATH}" -f message="Store ${TAG} handoff chunk [skip ci]" -f content="$CONTENT" >/dev/null
-            fi
-          done
