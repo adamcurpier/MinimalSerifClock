@@ -51,7 +51,9 @@ jobs:
           VERSION=$(sed -n "s/.*versionName '\([^']*\)'.*/\1/p" app/build.gradle | head -n 1)
           TAG="v${VERSION}"
           mkdir -p /tmp/apk-handoff
-          base64 -w 0 app/build/outputs/apk/debug/app-debug.apk | fold -w 1800 | split -d -a 3 - /tmp/apk-handoff/chunk-
+          base64 -w 0 app/build/outputs/apk/debug/app-debug.apk > /tmp/apk-handoff/apk.b64
+          split -b 1800 -d -a 3 /tmp/apk-handoff/apk.b64 /tmp/apk-handoff/chunk-
+          rm /tmp/apk-handoff/apk.b64
           for FILE in /tmp/apk-handoff/chunk-*; do
             NAME=$(basename "$FILE").txt
             API_PATH="handoff/${TAG}/${NAME}"
