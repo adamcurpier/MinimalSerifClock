@@ -10,6 +10,7 @@ permissions:
 
 jobs:
   build:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - name: Check out source
@@ -42,4 +43,19 @@ jobs:
             gh release upload "$TAG" "$ASSET" --clobber
           else
             gh release create "$TAG" "$ASSET" --title "Minimal Serif Clock ${TAG}" --notes "Installable APK for Minimal Serif Clock ${TAG}."
+          fi
+      - name: Store APK temporarily for ChatGPT handoff
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION=$(sed -n "s/.*versionName '\([^']*\)'.*/\1/p" app/build.gradle | head -n 1)
+          TAG="v${VERSION}"
+          ASSET="MinimalSerifClock-${TAG}.apk"
+          PATH_IN_REPO="builds/${ASSET}.b64"
+          B64=$(base64 -w 0 app/build/outputs/apk/debug/app-debug.apk)
+          EXISTING_SHA=$(gh api "repos/${GITHUB_REPOSITORY}/contents/${PATH_IN_REPO}" --jq .sha 2>/dev/null || true)
+          if [ -n "$EXISTING_SHA" ]; then
+            gh api --method PUT "repos/${GITHUB_REPOSITORY}/contents/${PATH_IN_REPO}" -f message="Store ${TAG} APK handoff [skip ci]" -f content="$B64" -f sha="$EXISTING_SHA" >/dev/null
+          else
+            gh api --method PUT "repos/${GITHUB_REPOSITORY}/contents/${PATH_IN_REPO}" -f message="Store ${TAG} APK handoff [skip ci]" -f content="$B64" >/dev/null
           fi
